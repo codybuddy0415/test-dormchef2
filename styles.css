@@ -98,37 +98,50 @@ ul  { list-style: none; }
   position: relative; z-index: 2;
   max-width: 480px; margin: 0 auto;
   min-height: 100vh;
-  overflow: hidden;
+  /* FIX: overflow:hidden was blocking ALL touch scroll on Android */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /* ════════════════════════════════════════
    SCREEN SYSTEM
 ════════════════════════════════════════ */
 .screen {
-  position: absolute; inset: 0;
-  transform: translateX(100%);
-  opacity: 0;
-  transition: transform var(--mid) var(--ease), opacity var(--mid) var(--ease);
+  /* FIX: position:absolute removed — it collapses page height to 0,
+     killing all scroll. Use block + visibility trick instead. */
+  display: block;
+  width: 100%;
+  visibility: hidden;
   pointer-events: none;
-  overflow: hidden;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: transform var(--mid) var(--ease), opacity var(--mid) var(--ease), visibility 0s var(--mid);
+  /* Keep it in flow but invisible */
+  position: absolute; top: 0; left: 0; right: 0;
+  overflow: visible;
 }
 .screen.active {
+  position: relative;                   /* FIX: back in flow so page has real height */
   transform: translateX(0);
   opacity: 1;
+  visibility: visible;
   pointer-events: all;
-  position: relative;
+  transition: transform var(--mid) var(--ease), opacity var(--mid) var(--ease), visibility 0s 0s;
+  overflow: visible;
 }
 .screen.slide-out {
   transform: translateX(-30px);
   opacity: 0;
+  visibility: hidden;
 }
 
 /* ════════════════════════════════════════
    HOME SCREEN
 ════════════════════════════════════════ */
 #screen-home {
-  display: flex;
-  flex-direction: column;
+  /* FIX: no display:flex/flex-direction — these create a fixed-height
+     container that fights with natural page scroll on Android */
+  display: block;
   min-height: 100vh;
 }
 
@@ -274,12 +287,13 @@ ul  { list-style: none; }
    HOME SCROLL AREA
 ════════════════════════════════════════ */
 .home-scroll {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;    /* FIX: Android momentum */
-  overscroll-behavior-y: contain;       /* FIX: prevent scroll bleed */
+  /* FIX: Do NOT use overflow-y:auto here — let the PAGE body scroll naturally.
+     Forcing a nested scroll container on Android breaks touch scroll entirely.
+     Just add padding so content clears the sticky header & bottom nav. */
+  width: 100%;
   padding: 16px 18px;
-  padding-bottom: calc(var(--bottom-nav-h) + 20px);
+  padding-bottom: calc(var(--bottom-nav-h) + 24px);
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Category Pills ── */
@@ -695,7 +709,8 @@ ul  { list-style: none; }
    DETAIL SCREEN
 ════════════════════════════════════════ */
 #screen-detail {
-  display: flex; flex-direction: column;
+  /* FIX: block not flex, natural page scroll */
+  display: block;
   min-height: 100vh;
   background: var(--surface-1);
 }
@@ -739,11 +754,10 @@ ul  { list-style: none; }
 }
 
 .detail-scroll {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;    /* FIX: Android momentum */
-  overscroll-behavior: contain;         /* FIX: no scroll bleed */
-  touch-action: pan-y;                  /* FIX: vertical scroll allowed */
+  /* FIX: no nested overflow-y — let page body scroll */
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding-bottom: calc(var(--bottom-nav-h) + 20px);
 }
 
@@ -864,8 +878,10 @@ ul  { list-style: none; }
    FAVORITES SCREEN
 ════════════════════════════════════════ */
 #screen-favs {
-  display:flex; flex-direction:column;
-  min-height:100vh; background:var(--surface-1);
+  /* FIX: block not flex */
+  display: block;
+  min-height: 100vh;
+  background: var(--surface-1);
 }
 
 .inner-header {
@@ -890,11 +906,10 @@ ul  { list-style: none; }
 }
 
 .fav-scroll {
-  flex:1;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;    /* FIX: Android momentum */
-  overscroll-behavior:contain;
-  padding-bottom:calc(var(--bottom-nav-h) + 20px);
+  /* FIX: no nested overflow-y — let page body scroll */
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--bottom-nav-h) + 20px);
 }
 
 .fav-row {
@@ -1068,4 +1083,5 @@ ul  { list-style: none; }
   .home-scroll   { padding-bottom:calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 20px); }
   .detail-scroll { padding-bottom:calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 20px); }
   .fav-scroll    { padding-bottom:calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 20px); }
+  .bottom-nav    { padding-bottom:env(safe-area-inset-bottom, 0); }
 }
