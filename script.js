@@ -979,12 +979,18 @@ document.addEventListener('DOMContentLoaded', () => {
   loadRecipes();
   updateSearchPlaceholder();
 
-  // H3: Back gesture (swipe right from left edge)
+  // H3: Back gesture — swipe RIGHT from left edge only, ignore vertical scrolls
   let touchStartX = 0;
-  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  let touchStartY = 0;
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
   document.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - touchStartX;
-    if (dx > 80 && touchStartX < 50) {
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+    // Only trigger if horizontal swipe is dominant and starts from left edge
+    if (dx > 80 && touchStartX < 50 && dy < 60) {
       if (currentActiveScreen === 'screen-detail') closeDetail();
       else if (currentActiveScreen === 'screen-favs') closeScreen('screen-favs');
     }
