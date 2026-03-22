@@ -45,18 +45,35 @@
 
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; background: #000; height: 100%; overscroll-behavior: none; }
+
+html {
+  font-size: 16px;
+  background: #000;
+  /* Fix iOS Safari: use fixed height so toolbar doesn't resize layout */
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 body {
   font-family: var(--font-ui);
   background: var(--bg);
   color: var(--cream);
-  height: 100dvh;
+  /* Use % height, not dvh, to avoid iOS toolbar resize jank */
+  height: 100%;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  /* Don't use user-select:none on body — blocks iOS text inputs */
   -webkit-tap-highlight-color: transparent;
-  user-select: none;
 }
-button { cursor: pointer; border: none; background: none; font-family: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+
+button {
+  cursor: pointer; border: none; background: none;
+  font-family: inherit; color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  /* Allow touch events to pass through normally */
+  touch-action: manipulation;
+}
 input { font-family: inherit; }
 img { display: block; max-width: 100%; }
 .hidden { display: none !important; }
@@ -66,16 +83,23 @@ img { display: block; max-width: 100%; }
 /* ════════════════════════════════════════
    APP SHELL + SCREENS
 ════════════════════════════════════════ */
-.app-shell { position: fixed; inset: 0; overflow: hidden; }
+.app-shell {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  overflow: hidden;
+}
 
 .screen {
-  position: absolute; inset: 0;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: var(--bg);
   transform: translateX(100%);
   transition: transform 0.38s var(--snap);
   will-change: transform;
+  /* Do NOT set overflow:hidden here — it kills inner scroll on iOS */
   overflow: hidden;
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 .screen.active { transform: translateX(0); }
 .screen.slide-out { transform: translateX(-28%); transition: transform 0.38s var(--snap); }
@@ -83,7 +107,13 @@ img { display: block; max-width: 100%; }
 /* ════════════════════════════════════════
    HOME SCREEN
 ════════════════════════════════════════ */
-#screen-home { display: flex; flex-direction: column; }
+#screen-home {
+  display: flex;
+  flex-direction: column;
+  /* Critical: screen height must be bounded for inner scroll to work */
+  height: 100%;
+  overflow: hidden;
+}
 
 .home-header {
   flex-shrink: 0;
@@ -167,18 +197,34 @@ img { display: block; max-width: 100%; }
 
 /* ── Home Scroll ── */
 .home-scroll {
-  flex: 1; overflow-y: auto; overflow-x: hidden;
-  padding: 0 0 80px;
+  flex: 1;
+  /* Critical for iOS: allow vertical scrolling */
+  overflow-y: scroll;
+  overflow-x: hidden;
+  /* iOS momentum scrolling */
   -webkit-overflow-scrolling: touch;
+  /* Prevent scroll from escaping to body */
+  overscroll-behavior-y: contain;
+  /* Tell browser this is a vertical scroll container */
+  touch-action: pan-y;
+  padding: 0 0 100px;
+  /* Must have explicit min-height:0 in flex column */
+  min-height: 0;
   scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .home-scroll::-webkit-scrollbar { display: none; }
 
 /* Category pills */
 .cat-scroll-row {
   display: flex; gap: 8px; padding: 14px 20px 8px;
-  overflow-x: auto; scrollbar-width: none;
+  overflow-x: scroll;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .cat-scroll-row::-webkit-scrollbar { display: none; }
 .cat-pill {
@@ -230,11 +276,18 @@ img { display: block; max-width: 100%; }
   min-width: 20px; text-align: center;
 }
 .ing-drawer {
-  max-height: 0; overflow: hidden;
+  max-height: 0;
+  overflow: hidden;
   transition: max-height .4s var(--ease);
   padding: 0 20px;
 }
-.ing-drawer.open { max-height: 820px; overflow-y: auto; padding-bottom: 8px; }
+.ing-drawer.open {
+  max-height: 900px;
+  /* Allow scrolling inside drawer on iOS when very tall */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
 /* H5: Error prevention banner */
 .ing-hint-banner {
   display: flex; align-items: center; gap: 8px;
@@ -417,7 +470,12 @@ img { display: block; max-width: 100%; }
 /* ════════════════════════════════════════
    DETAIL SCREEN — H3: back always reachable
 ════════════════════════════════════════ */
-#screen-detail { display: flex; flex-direction: column; }
+#screen-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
 
 .detail-header {
   position: absolute; top: 0; left: 0; right: 0; z-index: 20;
@@ -454,9 +512,16 @@ img { display: block; max-width: 100%; }
 .detail-fav-header:active { transform: scale(.88); }
 
 .detail-scroll {
-  flex: 1; overflow-y: auto; overflow-x: hidden;
-  -webkit-overflow-scrolling: touch; scrollbar-width: none;
-  padding-bottom: 40px;
+  flex: 1;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  min-height: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 60px;
 }
 .detail-scroll::-webkit-scrollbar { display: none; }
 
@@ -524,6 +589,16 @@ img { display: block; max-width: 100%; }
 /* ════════════════════════════════════════
    FAVORITES SCREEN
 ════════════════════════════════════════ */
+/* ════════════════════════════════════════
+   FAVORITES SCREEN
+════════════════════════════════════════ */
+#screen-favs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 .inner-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 16px 14px; flex-shrink: 0;
@@ -533,7 +608,18 @@ img { display: block; max-width: 100%; }
 .back-btn:active { transform: scale(.9); }
 .inner-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: var(--cream); }
 
-.fav-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 80px; }
+.fav-scroll {
+  flex: 1;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  min-height: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 80px;
+}
 .fav-scroll::-webkit-scrollbar { display: none; }
 
 .fav-row { display: flex; align-items: center; gap: 13px; padding: 13px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
