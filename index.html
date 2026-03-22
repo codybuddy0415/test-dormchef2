@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"/>
   <title>DormChef – Cook with what you have.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -50,7 +50,7 @@
       <div class="active-filters-row hidden" id="active-filters-row" aria-live="polite" aria-label="Active filters"></div>
     </div>
 
-    <div class="home-scroll" id="home-scroll">
+    <div class="home-scroll" id="home-scroll" style="touch-action:pan-y">
 
       <!-- Category pills — H6: recognition over recall -->
       <div class="cat-scroll-row" role="tablist" aria-label="Filter by meal category">
@@ -155,7 +155,7 @@
       <div class="detail-header-title hidden" id="detail-header-title" aria-live="polite"></div>
       <button class="detail-fav-header" id="detail-fav-header" onclick="toggleFavorite()" aria-label="Save this recipe">♡</button>
     </div>
-    <div class="detail-scroll" id="detail-body" role="region" aria-label="Recipe content"></div>
+    <div class="detail-scroll" id="detail-body" role="region" aria-label="Recipe content" style="touch-action:pan-y"></div>
   </div>
 
   <!-- SCREEN: FAVORITES -->
@@ -167,7 +167,7 @@
       <h2 class="inner-title" id="fav-screen-title">❤️ Saved</h2>
       <div style="width:32px"></div>
     </div>
-    <div class="fav-scroll">
+    <div class="fav-scroll" style="touch-action:pan-y">
       <div id="fav-list" aria-label="Saved recipe list"></div>
       <div id="no-fav" class="empty-card hidden" style="margin:20px 16px" role="alert">
         <div class="empty-emoji">🍽️</div>
