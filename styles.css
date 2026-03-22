@@ -46,12 +46,12 @@
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html {
-  font-size: 16px;
-  background: #000;
-  /* Fix iOS Safari: use fixed height so toolbar doesn't resize layout */
+html, body {
+  width: 100%;
   height: 100%;
   overflow: hidden;
+  font-size: 16px;
+  background: #000;
   overscroll-behavior: none;
 }
 
@@ -59,11 +59,7 @@ body {
   font-family: var(--font-ui);
   background: var(--bg);
   color: var(--cream);
-  /* Use % height, not dvh, to avoid iOS toolbar resize jank */
-  height: 100%;
-  overflow: hidden;
   -webkit-font-smoothing: antialiased;
-  /* Don't use user-select:none on body — blocks iOS text inputs */
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -71,55 +67,71 @@ button {
   cursor: pointer; border: none; background: none;
   font-family: inherit; color: inherit;
   -webkit-tap-highlight-color: transparent;
-  /* Allow touch events to pass through normally */
   touch-action: manipulation;
 }
 input { font-family: inherit; }
 img { display: block; max-width: 100%; }
 .hidden { display: none !important; }
 
-/* Status bar removed — clean app chrome */
+/* Status bar removed */
 
 /* ════════════════════════════════════════
-   APP SHELL + SCREENS
+   APP SHELL — simple full-screen container
+   NO position:fixed + transform combos
+   (kills scroll on Android Chrome)
 ════════════════════════════════════════ */
 .app-shell {
+  /* Use fixed positioning ONLY on the shell wrapper */
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   overflow: hidden;
+  /* Establish a new stacking context cleanly */
+  isolation: isolate;
 }
 
+/* ════════════════════════════════════════
+   SCREENS — slide left/right via transform
+   Each screen is full-height flex column
+════════════════════════════════════════ */
 .screen {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   background: var(--bg);
+  /* Screens off-screen by default */
   transform: translateX(100%);
-  transition: transform 0.38s var(--snap);
-  will-change: transform;
-  /* Do NOT set overflow:hidden here — it kills inner scroll on iOS */
-  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  /* flex column so header stays fixed, scroll area takes remaining space */
   display: flex;
   flex-direction: column;
+  /* overflow hidden on screen itself is safe — scroll is on child .scroll elements */
+  overflow: hidden;
 }
-.screen.active { transform: translateX(0); }
-.screen.slide-out { transform: translateX(-28%); transition: transform 0.38s var(--snap); }
+.screen.active {
+  transform: translateX(0%);
+}
+.screen.slide-out {
+  transform: translateX(-25%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
 /* ════════════════════════════════════════
    HOME SCREEN
 ════════════════════════════════════════ */
 #screen-home {
-  display: flex;
-  flex-direction: column;
-  /* Critical: screen height must be bounded for inner scroll to work */
-  height: 100%;
-  overflow: hidden;
+  /* Already display:flex flex-direction:column from .screen */
+  /* height:100% is set by position:absolute top/left/width/height */
 }
 
 .home-header {
-  flex-shrink: 0;
+  /* Never grow or shrink — stays fixed height, scroll area gets the rest */
+  flex: 0 0 auto;
   padding: 20px 20px 14px;
   background: var(--bg);
   position: relative; z-index: 10;
+  /* Prevent header from being taller than needed */
+  overflow: hidden;
 }
 .home-header::after {
   content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
@@ -197,23 +209,21 @@ img { display: block; max-width: 100%; }
 
 /* ── Home Scroll ── */
 .home-scroll {
-  flex: 1;
-  /* Critical for iOS: allow vertical scrolling */
-  overflow-y: scroll;
-  overflow-x: hidden;
-  /* iOS momentum scrolling */
-  -webkit-overflow-scrolling: touch;
-  /* Prevent scroll from escaping to body */
-  overscroll-behavior-y: contain;
-  /* Tell browser this is a vertical scroll container */
-  touch-action: pan-y;
-  padding: 0 0 100px;
-  /* Must have explicit min-height:0 in flex column */
+  /* flex:1 + min-height:0 is the ONLY reliable way to make
+     a flex child scrollable on both Android and iOS */
+  flex: 1 1 0;
   min-height: 0;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  /* overflow:scroll (not auto) — Android Chrome needs this */
+  overflow-x: hidden;
+  overflow-y: scroll;
+  /* iOS momentum */
+  -webkit-overflow-scrolling: touch;
+  /* Stop scroll from bubbling to parent (prevents body bounce) */
+  overscroll-behavior-y: contain;
+  padding-bottom: 100px;
 }
 .home-scroll::-webkit-scrollbar { display: none; }
+.home-scroll { scrollbar-width: none; }
 
 /* Category pills */
 .cat-scroll-row {
@@ -471,11 +481,10 @@ img { display: block; max-width: 100%; }
    DETAIL SCREEN — H3: back always reachable
 ════════════════════════════════════════ */
 #screen-detail {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  /* inherits flex column from .screen */
 }
+
+/* Detail header floats above scroll content */
 
 .detail-header {
   position: absolute; top: 0; left: 0; right: 0; z-index: 20;
@@ -512,15 +521,13 @@ img { display: block; max-width: 100%; }
 .detail-fav-header:active { transform: scale(.88); }
 
 .detail-scroll {
-  flex: 1;
-  overflow-y: scroll;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-x: hidden;
+  overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-  touch-action: pan-y;
-  min-height: 0;
   scrollbar-width: none;
-  -ms-overflow-style: none;
   padding-bottom: 60px;
 }
 .detail-scroll::-webkit-scrollbar { display: none; }
@@ -593,10 +600,7 @@ img { display: block; max-width: 100%; }
    FAVORITES SCREEN
 ════════════════════════════════════════ */
 #screen-favs {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  /* inherits flex column from .screen */
 }
 
 .inner-header {
@@ -609,15 +613,13 @@ img { display: block; max-width: 100%; }
 .inner-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: var(--cream); }
 
 .fav-scroll {
-  flex: 1;
-  overflow-y: scroll;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-x: hidden;
+  overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-  touch-action: pan-y;
-  min-height: 0;
   scrollbar-width: none;
-  -ms-overflow-style: none;
   padding-bottom: 80px;
 }
 .fav-scroll::-webkit-scrollbar { display: none; }
@@ -636,11 +638,18 @@ img { display: block; max-width: 100%; }
    BOTTOM NAV — H4: consistent
 ════════════════════════════════════════ */
 .bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
   display: flex; align-items: center;
-  background: rgba(13,11,9,.94); backdrop-filter: blur(24px);
+  background: rgba(13,11,9,.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border);
-  padding: 8px 0 max(12px, env(safe-area-inset-bottom));
+  padding: 8px 0;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  /* Do not absorb touches outside the nav buttons */
+  pointer-events: auto;
 }
 .bn-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; color: rgba(244,235,224,.3); transition: color .15s; position: relative; }
 .bn-item.active { color: var(--amber); }
