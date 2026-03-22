@@ -751,6 +751,19 @@ function pickFeatured() {
   renderFeaturedCard(featuredRecipe);
 }
 
+// Real food photos by category for featured card fallback
+const CATEGORY_PHOTOS = {
+  'Breakfast': 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=700&q=80',
+  'Lunch':     'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=700&q=80',
+  'Dinner':    'https://images.unsplash.com/photo-1547592180-85f173990554?w=700&q=80',
+  'Snacks':    'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=700&q=80',
+};
+
+function getFeaturedPhoto(r) {
+  if (r.image && r.image.trim() && !r.image.includes('placeholder')) return r.image.trim();
+  return CATEGORY_PHOTOS[r.category] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=700&q=80';
+}
+
 function renderFeaturedCard(r) {
   const imgEl = document.getElementById('fc-img');
   const placeholder = document.getElementById('fc-placeholder');
@@ -769,16 +782,18 @@ function renderFeaturedCard(r) {
     metaEl.innerHTML = pills.map(p=>`<span>${p}</span>`).join('');
   }
   if (imgEl && placeholder) {
-    if (r.image && r.image.trim()) {
-      imgEl.src = r.image;
-      imgEl.classList.remove('hidden');
-      placeholder.style.display = 'none';
-      imgEl.onerror = () => { imgEl.classList.add('hidden'); placeholder.textContent = r.emoji||'🍳'; placeholder.style.display = 'flex'; };
-    } else {
+    const photo = getFeaturedPhoto(r);
+    imgEl.src = photo;
+    imgEl.classList.remove('hidden');
+    placeholder.style.display = 'none';
+    imgEl.onerror = () => {
+      // Fallback to category photo
+      const catPhoto = CATEGORY_PHOTOS[r.category];
+      if (catPhoto && imgEl.src !== catPhoto) { imgEl.src = catPhoto; return; }
       imgEl.classList.add('hidden');
       placeholder.textContent = r.emoji||'🍳';
       placeholder.style.display = 'flex';
-    }
+    };
   }
   updateFeaturedFavBtn();
 }
@@ -959,10 +974,6 @@ function loadRecipes() {
    INIT
 ════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
-  // H1: Clock
-  tickClock();
-  setInterval(tickClock, 30000);
-
   setGreeting();
   buildIngredientChips();
   loadRecipes();
